@@ -1,0 +1,1019 @@
+<!doctype html>
+<!--
+  MUSEO INTERACTIVO 3D · "PASCUAL BRAVO, A UN ESCANEO DE DISTANCIA"
+  Cómic de Sebastián · recorrido en tercera persona con minijuego vertical.
+
+  CÓMO EJECUTARLO
+  · En línea: basta con abrir la URL del despliegue.
+  · En local: doble clic en index.html. El audio y el cómic funcionan igual
+    porque van dentro del archivo o al lado de él.
+  · Controles: W A S D mover · mouse cámara · Shift correr · Espacio saltar ·
+    Shift+dirección o botón derecho = dash · E abrir viñeta · ESC liberar mouse.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Museo 3D · Sebastián y el campus</title>
+<style>
+:root{
+  --tinta:#141019; --papel:#F7F1E4; --crema:#EDE3CF;
+  --verde:#6B7A4B; --verdeO:#4E5A36; --naranja:#E2762B; --rojo:#C8402F;
+  --azul:#2E6F9E; --amarillo:#F2C14E; --piel:#B5793F;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0E0B12;color:var(--papel);
+  font-family:"Trebuchet MS","Segoe UI",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+canvas{display:block}
+button{font-family:inherit}
+
+/* ---------------- HUD ---------------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+#sala{position:absolute;left:20px;top:18px;background:var(--papel);color:var(--tinta);
+  padding:9px 14px;border:3px solid var(--tinta);border-radius:3px;
+  box-shadow:5px 5px 0 rgba(0,0,0,.45);max-width:330px}
+#sala .k{font-size:10px;letter-spacing:.2em;color:#7B7467}
+#sala .n{font-size:18px;font-weight:bold;letter-spacing:.02em;line-height:1.1}
+#sala .s{font-size:12px;color:#5E574C;margin-top:3px;line-height:1.3}
+
+#pags{position:absolute;right:20px;top:18px;display:flex;gap:6px}
+#pags i{width:26px;height:30px;background:rgba(247,241,228,.18);border:2px solid rgba(247,241,228,.5);
+  border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:12px;
+  font-weight:bold;font-style:normal;color:rgba(247,241,228,.6);transition:.18s}
+#pags i.ok{background:var(--amarillo);border-color:var(--tinta);color:var(--tinta);transform:translateY(-3px)}
+
+#prompt{position:absolute;left:50%;top:63%;transform:translateX(-50%);text-align:center;opacity:0;
+  transition:opacity .15s}
+#prompt.show{opacity:1}
+#prompt .t{display:inline-block;background:var(--papel);color:var(--tinta);font-weight:bold;font-size:14px;
+  padding:5px 12px;border:3px solid var(--tinta);border-radius:3px;margin-bottom:7px}
+#prompt .e{display:block;background:var(--naranja);color:#fff;font-weight:bold;font-size:12px;
+  letter-spacing:.16em;padding:7px 14px;border:3px solid var(--tinta);border-radius:3px;
+  width:max-content;margin:0 auto}
+
+#mira{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;
+  background:rgba(247,241,228,.5);box-shadow:0 0 0 2px rgba(20,16,25,.4)}
+
+#habil{position:absolute;left:20px;bottom:18px;display:flex;gap:9px}
+.hab{background:rgba(20,16,25,.72);border:2px solid rgba(247,241,228,.35);border-radius:4px;
+  padding:7px 11px;font-size:11px;letter-spacing:.1em;min-width:76px;text-align:center}
+.hab b{display:block;font-size:14px;color:var(--amarillo)}
+.hab.off{opacity:.35}
+.hab.listo b{color:#7FD17F}
+
+#alturaBox{position:absolute;right:20px;bottom:18px;background:rgba(20,16,25,.72);
+  border:2px solid rgba(247,241,228,.35);border-radius:4px;padding:8px 13px;text-align:right;display:none}
+#alturaBox .v{font-size:22px;font-weight:bold;color:var(--amarillo);line-height:1}
+#alturaBox .l{font-size:10px;letter-spacing:.16em;opacity:.7}
+
+#toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);background:var(--rojo);color:#fff;
+  padding:10px 18px;border:3px solid var(--tinta);border-radius:3px;font-weight:bold;font-size:14px;
+  opacity:0;transition:opacity .3s;box-shadow:5px 5px 0 rgba(0,0,0,.4)}
+#toast.show{opacity:1}
+
+#ayuda{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-size:11px;
+  letter-spacing:.08em;color:rgba(247,241,228,.55);text-align:center;line-height:1.6}
+#ayuda b{color:var(--amarillo)}
+
+/* ---------------- capas ---------------- */
+.ov{position:fixed;inset:0;z-index:40;background:rgba(14,11,18,.88);display:none;
+  align-items:center;justify-content:center;padding:24px;overflow:auto}
+.ov.show{display:flex}
+.card{background:var(--papel);color:var(--tinta);width:100%;max-width:1040px;max-height:92vh;overflow:auto;
+  border:5px solid var(--tinta);border-radius:4px;padding:26px 30px;position:relative;
+  box-shadow:12px 12px 0 rgba(0,0,0,.5)}
+.card h2{margin:0 0 6px;font-size:26px;letter-spacing:-.01em}
+.x{position:absolute;right:12px;top:10px;border:3px solid var(--tinta);background:var(--rojo);color:#fff;
+  width:34px;height:34px;border-radius:3px;cursor:pointer;font-size:17px;font-weight:bold;line-height:1}
+.x:hover{background:var(--tinta)}
+
+/* intro */
+#intro{background:radial-gradient(circle at 50% 35%,rgba(40,30,55,.86),rgba(10,8,14,.96))}
+#intro .card{max-width:760px;text-align:center;background:var(--papel)}
+#intro h1{font-size:40px;line-height:1.02;margin:0 0 6px;letter-spacing:-.02em}
+#intro h1 span{color:var(--naranja)}
+#intro .sub{font-size:14.5px;color:#5E574C;margin-bottom:18px;line-height:1.5}
+.tira{display:flex;height:12px;margin:14px 0 18px;border:3px solid var(--tinta)}
+.tira i{flex:1}
+#play{display:block;width:100%;padding:17px;background:var(--naranja);border:4px solid var(--tinta);
+  color:#fff;font-size:16px;font-weight:bold;letter-spacing:.14em;cursor:pointer;border-radius:3px;
+  box-shadow:6px 6px 0 var(--tinta)}
+#play:hover{background:var(--rojo)}
+#play:active{transform:translate(3px,3px);box-shadow:3px 3px 0 var(--tinta)}
+#reproduciendo{display:none}
+.eq{display:flex;gap:5px;justify-content:center;align-items:flex-end;height:46px;margin:6px 0 14px}
+.eq i{width:7px;background:var(--verde);border-radius:2px;animation:eqa .9s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:.1s;background:var(--naranja)}
+.eq i:nth-child(3){animation-delay:.2s;background:var(--amarillo)}
+.eq i:nth-child(4){animation-delay:.3s;background:var(--azul)}
+.eq i:nth-child(5){animation-delay:.4s;background:var(--rojo)}
+.eq i:nth-child(6){animation-delay:.5s;background:var(--verde)}
+.eq i:nth-child(7){animation-delay:.6s;background:var(--naranja)}
+@keyframes eqa{0%,100%{height:10px}50%{height:46px}}
+#barra{height:10px;background:var(--crema);border:3px solid var(--tinta);overflow:hidden;margin-bottom:8px}
+#barra i{display:block;height:100%;width:0;background:var(--verde)}
+#tiempo{font-size:12px;letter-spacing:.14em;color:#5E574C}
+#saltar{margin-top:14px;background:none;border:2px solid #AFA695;color:#5E574C;font-size:11px;
+  letter-spacing:.14em;padding:9px 15px;border-radius:3px;cursor:pointer;display:none}
+#saltar:hover{border-color:var(--tinta);color:var(--tinta)}
+
+/* visor de página */
+#visor .card{max-width:1180px;padding:0;background:var(--tinta);border-color:var(--tinta)}
+#visorTop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;
+  background:var(--tinta);color:var(--papel)}
+#visorTop .num{background:var(--amarillo);color:var(--tinta);font-weight:bold;font-size:13px;
+  padding:5px 11px;border-radius:2px;letter-spacing:.1em}
+#visorTop .tit{font-size:15px;font-weight:bold;flex:1}
+#visorImg{display:block;width:100%;background:#000}
+#visorPie{padding:13px 16px;background:var(--papel);color:var(--tinta);font-size:13.5px;line-height:1.5}
+.navp{display:flex;gap:8px}
+.navp button{background:var(--papel);border:2px solid var(--papel);color:var(--tinta);font-weight:bold;
+  font-size:12px;padding:6px 12px;border-radius:2px;cursor:pointer}
+.navp button:hover{background:var(--amarillo);border-color:var(--amarillo)}
+
+/* final */
+#fin .card{max-width:820px;text-align:center;background:var(--amarillo)}
+#fin h2{font-size:44px;line-height:1.05}
+#fin .sol{background:var(--tinta);color:var(--papel);padding:18px 20px;border-radius:3px;margin:18px 0;
+  font-size:16px;line-height:1.5;text-align:left}
+#fin .sol b{color:var(--amarillo)}
+.btn{display:inline-block;margin-top:8px;padding:13px 22px;background:var(--tinta);color:var(--papel);
+  border:3px solid var(--tinta);font-size:12px;letter-spacing:.16em;font-weight:bold;cursor:pointer;
+  border-radius:3px}
+.btn:hover{background:var(--rojo);border-color:var(--rojo)}
+.lista{text-align:left;font-size:14px;line-height:1.7;margin:0;padding-left:20px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="hud">
+  <div id="mira"></div>
+  <div id="sala"><div class="k">SALA</div><div class="n">—</div><div class="s"></div></div>
+  <div id="pags"></div>
+  <div id="prompt"><div class="t"></div><div class="e">E · ABRIR VIÑETA</div></div>
+  <div id="habil">
+    <div class="hab listo" id="habSalto"><b>ESPACIO</b>SALTO</div>
+    <div class="hab listo" id="habDash"><b>SHIFT</b>DASH</div>
+  </div>
+  <div id="alturaBox"><div class="v">0 m</div><div class="l">ALTURA</div></div>
+  <div id="toast"></div>
+  <div id="ayuda"><b>W A S D</b> moverse · <b>mouse</b> cámara · <b>espacio</b> saltar · <b>shift</b> dash · <b>E</b> abrir · <b>ESC</b> soltar mouse</div>
+</div>
+
+<!-- ============ INTRO CON AUDIO ============ -->
+<div class="ov show" id="intro">
+  <div class="card">
+    <h1>PASCUAL BRAVO,<br><span>A UN ESCANEO</span> DE DISTANCIA</h1>
+    <div class="sub">Museo interactivo en 3D · la historia de Sebastián, primer semestre</div>
+    <div class="tira">
+      <i style="background:var(--verde)"></i><i style="background:var(--naranja)"></i>
+      <i style="background:var(--amarillo)"></i><i style="background:var(--azul)"></i>
+      <i style="background:var(--rojo)"></i><i style="background:var(--piel)"></i>
+    </div>
+    <div id="antesDePlay">
+      <p style="font-size:14.5px;line-height:1.6;color:#4A443B;margin:0 0 18px">
+        Antes de entrar, escucha la introducción. Cuando el audio termine podrás mover a Sebastián,
+        recorrer la sala del cómic y, al leer las seis páginas, se abrirá la sala del reto.
+      </p>
+      <button id="play">▶ ESCUCHAR INTRODUCCIÓN</button>
+    </div>
+    <div id="reproduciendo">
+      <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p style="font-size:15px;font-weight:bold;margin:0 0 12px">Escuchando la introducción…</p>
+      <div id="barra"><i></i></div>
+      <div id="tiempo">0:00 / 0:00</div>
+      <button id="saltar">SALTAR INTRODUCCIÓN</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VISOR DE PÁGINA ============ -->
+<div class="ov" id="visor">
+  <div class="card">
+    <button class="x" data-close>×</button>
+    <div id="visorTop">
+      <span class="num">PÁGINA 1 / 6</span>
+      <span class="tit">—</span>
+      <span class="navp">
+        <button id="pprev">‹ ANTERIOR</button>
+        <button id="pnext">SIGUIENTE ›</button>
+      </span>
+    </div>
+    <img id="visorImg" alt="">
+    <div id="visorPie">—</div>
+  </div>
+</div>
+
+<!-- ============ AVISO DE SALA DESBLOQUEADA ============ -->
+<div class="ov" id="desbloqueo">
+  <div class="card" style="max-width:720px;text-align:center">
+    <button class="x" data-close>×</button>
+    <h2>¡Leíste todo el cómic!</h2>
+    <p style="font-size:15px;line-height:1.6">
+      Se abrió la puerta del fondo. En la <b>Sala del Reto</b> tienes que subir hasta arriba:
+      en cada plataforma hay un cartel con una de las dificultades que vivió Sebastián.
+    </p>
+    <p style="font-size:14px;line-height:1.6;background:var(--crema);padding:13px 15px;border-radius:3px">
+      <b>Espacio</b> para saltar · <b>Shift</b> para hacer dash en el aire ·
+      si te caes vuelves al último cartel que alcanzaste.
+    </p>
+    <button class="btn" data-close>IR AL RETO</button>
+  </div>
+</div>
+
+<!-- ============ FINAL ============ -->
+<div class="ov" id="fin">
+  <div class="card">
+    <h2>¡MUCHAS GRACIAS<br>POR ESCUCHARNOS!</h2>
+    <div class="sol">
+      Sebastián se perdió la inducción, se perdió en el campus y perdió un día entero.
+      <br><br>
+      <b>La solución:</b> un QR en los puntos clave de la institución con salones, trámites
+      y zonas de estudio en un solo lugar. <b>Pascual Bravo, a un escaneo de distancia.</b>
+    </div>
+    <p style="font-size:13px;line-height:1.6;color:#4A443B;margin:0">
+      Subiste las seis dificultades del problema y llegaste a la solución.
+    </p>
+    <button class="btn" id="volverInicio">VOLVER AL INICIO DEL MUSEO</button>
+  </div>
+</div>
+
+<audio id="audioIntro" src="intro.mp3" preload="auto"></audio>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="comic_embed.js"></script>
+<script>
+/* =========================================================================
+   DATOS
+   ========================================================================= */
+const PAGINAS = [
+ {n:1, t:"Llegada sin inducción",
+  pie:"Sebastián llega a la Institución Universitaria Pascual Bravo en su primer semestre. Acaba de mudarse a Medellín y se perdió la inducción: el mapa no muestra los bloques y en los chats cada quien dice algo distinto."},
+ {n:2, t:"Un día entero perdido",
+  pie:"Intenta preguntar, pero se frena: «¿y si no entienden mi acento?». Termina en la clase equivocada y llega a casa con la sensación de haber perdido el día completo."},
+ {n:3, t:"Al día siguiente: información regada",
+  pie:"El problema sigue. Notificaciones por todos lados, cada grupo dice algo distinto de las zonas de estudio… y el parcial es el jueves. Valentina, al fondo, ya conoce la salida."},
+ {n:4, t:"Valentina y el QR del campus",
+  pie:"En el campus hay un tótem con un QR que llevaba ahí todo el tiempo. Valentina, de tercer semestre, se acerca y le explica que ese QR lleva a salones, trámites y zonas de estudio."},
+ {n:5, t:"Todo en un solo lugar",
+  pie:"Sebastián escanea. Salones, trámites y zonas de estudio aparecen juntos: el campus deja de ser un laberinto."},
+ {n:6, t:"Pascual Bravo, a un escaneo",
+  pie:"Biblioteca, cafetería, laboratorios y trámites, todo a un escaneo. Estar solo en una ciudad nueva asusta, pero con las herramientas claras todo cambia."}
+];
+
+const DIFICULTADES = [
+ "Se perdió la inducción y nadie le explicó por dónde empezar",
+ "El mapa del campus no muestra los bloques ni los salones",
+ "Miedo a preguntar: «¿y si no entienden mi acento?»",
+ "Un día entero perdido: termina en la clase equivocada",
+ "La información está regada: cada grupo dice algo distinto",
+ "Trámites y zonas de estudio sin un punto único de consulta"
+];
+const SOLUCION = "LA SOLUCIÓN · un QR con todo el campus: salones, trámites y zonas de estudio en un solo lugar";
+
+/* =========================================================================
+   ESCENA
+   ========================================================================= */
+let scene, camera, renderer, clock;
+const SOLIDS = [];       // cajas de colisión {x0,x1,y0,y1,z0,z1}
+const CUADROS = [];      // viñetas examinables
+let puertaMesh = null, puertaAbierta = false;
+
+const leidas = {};       // páginas ya abiertas
+const COL = {
+  pared:0x3A3048, paredB:0x463A58, piso:0x241E2E, techo:0x191320,
+  madera:0x7A5433, crema:0xF7F1E4, tinta:0x141019,
+  verde:0x6B7A4B, verdeO:0x4E5A36, naranja:0xE2762B, rojo:0xC8402F,
+  azul:0x2E6F9E, amarillo:0xF2C14E, piel:0xB5793F, pelo:0x2E1E16,
+  jean:0x3B4A63, zapato:0x241A14, audio:0xE8E0D0
+};
+
+function cv(w,h){ const c=document.createElement("canvas"); c.width=w; c.height=h; return c; }
+function tex(c){ const t=new THREE.CanvasTexture(c); t.anisotropy=8; t.needsUpdate=true; return t; }
+function wrap(x,text,maxW,lh,cx,cy){
+  const words=String(text).split(" "); let line="", y=cy, out=[];
+  for(let i=0;i<words.length;i++){
+    const test=line?line+" "+words[i]:words[i];
+    if(x.measureText(test).width>maxW && line){ out.push(line); line=words[i]; } else line=test;
+  }
+  out.push(line); out.forEach(l=>{ x.fillText(l,cx,y); y+=lh; });
+  return y;
+}
+function fit(x,text,maxW,start,min){
+  let fs=start;
+  do{ x.font="bold "+fs+"px Trebuchet MS, Arial, sans-serif"; fs-=2; }
+  while(x.measureText(text).width>maxW && fs>min);
+  return fs+2;
+}
+
+/* ---------- texturas generadas ---------- */
+function texCartel(num,texto,color){
+  const c=cv(1024,512), x=c.getContext("2d");
+  x.fillStyle="#F7F1E4"; x.fillRect(0,0,1024,512);
+  x.fillStyle="#141019"; x.fillRect(0,0,1024,22); x.fillRect(0,490,1024,22);
+  x.fillRect(0,0,22,512); x.fillRect(1002,0,22,512);
+  x.fillStyle=color; x.fillRect(22,22,1002-22,120);
+  x.fillStyle="#F7F1E4"; x.textAlign="left";
+  x.font="bold 70px Trebuchet MS, Arial, sans-serif";
+  x.fillText(num,56,118);
+  x.fillStyle="#141019"; x.textAlign="center";
+  x.font="bold 46px Trebuchet MS, Arial, sans-serif";
+  wrap(x,texto,880,56,512,250);
+  return tex(c);
+}
+function texLetrero(titulo,sub,bg,fg){
+  const c=cv(1024,256), x=c.getContext("2d");
+  x.fillStyle=bg; x.fillRect(0,0,1024,256);
+  x.fillStyle=fg; x.fillRect(0,0,1024,14);
+  x.textAlign="center"; x.fillStyle=fg;
+  const fs=fit(x,titulo,900,70,26);
+  x.fillText(titulo,512,fs>52?124:112);
+  if(sub){ x.fillStyle="#C9C0AE"; x.font="24px Trebuchet MS, Arial, sans-serif";
+    wrap(x,sub,900,30,512,fs>52?176:164); }
+  return tex(c);
+}
+function texPlaca(p){
+  const c=cv(640,220), x=c.getContext("2d");
+  x.fillStyle="#F7F1E4"; x.fillRect(0,0,640,220);
+  x.fillStyle="#E2762B"; x.fillRect(0,0,640,12);
+  x.fillStyle="#141019"; x.textAlign="left";
+  x.font="bold 34px Trebuchet MS, Arial, sans-serif";
+  x.fillText("PÁGINA "+p.n,26,76);
+  x.fillStyle="#141019"; const fs=fit(x,p.t,580,34,18);
+  x.font="bold "+fs+"px Trebuchet MS, Arial, sans-serif";
+  x.fillText(p.t,26,128);
+  x.fillStyle="#7B7467"; x.font="22px Trebuchet MS, Arial, sans-serif";
+  x.fillText("Acércate y pulsa E",26,180);
+  return tex(c);
+}
+function texNumPiso(n){
+  const c=cv(256,256), x=c.getContext("2d");
+  x.clearRect(0,0,256,256);
+  x.fillStyle="rgba(242,193,78,.75)"; x.beginPath(); x.arc(128,128,96,0,6.3); x.fill();
+  x.fillStyle="#141019"; x.textAlign="center";
+  x.font="bold 130px Trebuchet MS, Arial, sans-serif";
+  x.fillText(String(n),128,174);
+  return tex(c);
+}
+function texFlecha(){
+  const c=cv(256,256), x=c.getContext("2d");
+  x.clearRect(0,0,256,256);
+  x.fillStyle="rgba(242,193,78,.85)";
+  x.beginPath(); x.moveTo(128,24); x.lineTo(226,140); x.lineTo(170,140);
+  x.lineTo(170,232); x.lineTo(86,232); x.lineTo(86,140); x.lineTo(30,140);
+  x.closePath(); x.fill();
+  return tex(c);
+}
+function texPisoGrid(c1,c2){
+  const c=cv(128,128), x=c.getContext("2d");
+  x.fillStyle=c1; x.fillRect(0,0,128,128);
+  x.strokeStyle=c2; x.lineWidth=4; x.strokeRect(0,0,128,128);
+  const t=tex(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+}
+function texGracias(){
+  const c=cv(1024,512), x=c.getContext("2d");
+  x.fillStyle="#F2C14E"; x.fillRect(0,0,1024,512);
+  x.fillStyle="#141019"; x.fillRect(0,0,1024,26); x.fillRect(0,486,1024,26);
+  x.textAlign="center"; x.fillStyle="#141019";
+  x.font="bold 92px Trebuchet MS, Arial, sans-serif";
+  x.fillText("¡MUCHAS GRACIAS",512,180);
+  x.fillText("POR ESCUCHARNOS!",512,278);
+  x.font="bold 34px Trebuchet MS, Arial, sans-serif";
+  wrap(x,SOLUCION,900,42,512,360);
+  return tex(c);
+}
+
+/* ---------- primitivas ---------- */
+function caja(w,h,d,x,y,z,mat,solida){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z); scene.add(m);
+  if(solida) SOLIDS.push({x0:x-w/2,x1:x+w/2,y0:y-h/2,y1:y+h/2,z0:z-d/2,z1:z+d/2,mesh:m});
+  return m;
+}
+function panel(w,h,t,dobleCara){
+  return new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+    new THREE.MeshBasicMaterial({map:t,transparent:true,side:dobleCara?THREE.DoubleSide:THREE.FrontSide}));
+}
+
+/* =========================================================================
+   SEBASTIÁN  (personaje low-poly armado con primitivas)
+   ========================================================================= */
+const SEB = {};
+function crearSebastian(){
+  const M = {
+    piel:  new THREE.MeshLambertMaterial({color:COL.piel}),
+    buzo:  new THREE.MeshLambertMaterial({color:COL.verde}),
+    buzoO: new THREE.MeshLambertMaterial({color:COL.verdeO}),
+    jean:  new THREE.MeshLambertMaterial({color:COL.jean}),
+    zap:   new THREE.MeshLambertMaterial({color:COL.zapato}),
+    pelo:  new THREE.MeshLambertMaterial({color:COL.pelo}),
+    aud:   new THREE.MeshLambertMaterial({color:COL.audio}),
+    morral:new THREE.MeshLambertMaterial({color:0x3E4A2C}),
+    ojo:   new THREE.MeshBasicMaterial({color:0x1A1210})
+  };
+  SEB.mat = M;
+  const g = new THREE.Group();
+  const add=(geo,mat,x,y,z,padre)=>{ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); (padre||g).add(m); return m; };
+
+  /* piernas con pivote en la cadera */
+  const pierna = (lado)=>{
+    const p = new THREE.Group(); p.position.set(lado*0.17, 0.95, 0); g.add(p);
+    add(new THREE.BoxGeometry(0.26,0.82,0.30), M.jean, 0,-0.41,0, p);
+    add(new THREE.BoxGeometry(0.30,0.17,0.44), M.zap,  0,-0.90,0.06, p);
+    return p;
+  };
+  SEB.piernaL = pierna(-1); SEB.piernaR = pierna(1);
+
+  /* torso y capucha */
+  SEB.torso = new THREE.Group(); SEB.torso.position.y = 0.97; g.add(SEB.torso);
+  add(new THREE.BoxGeometry(0.74,0.80,0.46), M.buzo, 0,0.40,0, SEB.torso);
+  add(new THREE.BoxGeometry(0.60,0.30,0.26), M.buzoO, 0,0.76,-0.19, SEB.torso);   // capucha
+  add(new THREE.BoxGeometry(0.52,0.58,0.22), M.morral, 0,0.42,-0.34, SEB.torso);  // morral
+  add(new THREE.BoxGeometry(0.46,0.09,0.06), M.buzoO, 0,0.60,-0.46, SEB.torso);
+  add(new THREE.BoxGeometry(0.10,0.52,0.05), M.morral, -0.22,0.46,0.24, SEB.torso);
+  add(new THREE.BoxGeometry(0.10,0.52,0.05), M.morral,  0.22,0.46,0.24, SEB.torso);
+
+  /* brazos con pivote en el hombro */
+  const brazo = (lado)=>{
+    const p = new THREE.Group(); p.position.set(lado*0.47, 0.70, 0); SEB.torso.add(p);
+    add(new THREE.BoxGeometry(0.20,0.66,0.23), M.buzo, 0,-0.33,0, p);
+    add(new THREE.BoxGeometry(0.18,0.16,0.20), M.piel, 0,-0.72,0, p);
+    return p;
+  };
+  SEB.brazoL = brazo(-1); SEB.brazoR = brazo(1);
+
+  /* cabeza */
+  SEB.cabeza = new THREE.Group(); SEB.cabeza.position.y = 0.92; SEB.torso.add(SEB.cabeza);
+  add(new THREE.CylinderGeometry(0.10,0.11,0.12,10), M.piel, 0,-0.06,0, SEB.cabeza);
+  const cara = add(new THREE.SphereGeometry(0.24,16,14), M.piel, 0,0.14,0, SEB.cabeza);
+  cara.scale.set(1,1.1,0.95);
+  add(new THREE.BoxGeometry(0.05,0.06,0.04), M.ojo, -0.09,0.15,0.22, SEB.cabeza);
+  add(new THREE.BoxGeometry(0.05,0.06,0.04), M.ojo,  0.09,0.15,0.22, SEB.cabeza);
+  /* pelo rizado: grupo de esferas */
+  const rizos = [[0,0.34,0,0.17],[-0.15,0.30,0.05,0.13],[0.15,0.30,0.05,0.13],
+                 [-0.12,0.28,-0.13,0.13],[0.12,0.28,-0.13,0.13],[0,0.26,-0.19,0.13],
+                 [-0.21,0.18,-0.02,0.11],[0.21,0.18,-0.02,0.11],[0,0.22,0.19,0.12]];
+  rizos.forEach(r=> add(new THREE.SphereGeometry(r[3],10,8), M.pelo, r[0],r[1],r[2], SEB.cabeza));
+  /* audífonos al cuello */
+  const aro = add(new THREE.TorusGeometry(0.24,0.045,8,18), M.aud, 0,-0.10,-0.02, SEB.cabeza);
+  aro.rotation.x = Math.PI/2;
+  add(new THREE.CylinderGeometry(0.085,0.085,0.07,12), M.aud, -0.24,-0.08,0.02, SEB.cabeza).rotation.z=Math.PI/2;
+  add(new THREE.CylinderGeometry(0.085,0.085,0.07,12), M.aud,  0.24,-0.08,0.02, SEB.cabeza).rotation.z=Math.PI/2;
+
+  g.scale.setScalar(0.92);
+  scene.add(g);
+  SEB.grupo = g;
+  return g;
+}
+
+let fase = 0;
+function animarSebastian(dt, vel, enSuelo, dashT){
+  const v = Math.min(vel, 9);
+  if(enSuelo){
+    fase += dt * (2.2 + v*2.1);
+    const amp = Math.min(1, v/5.2) * 0.62;
+    SEB.piernaL.rotation.x =  Math.sin(fase)*amp;
+    SEB.piernaR.rotation.x = -Math.sin(fase)*amp;
+    SEB.brazoL.rotation.x  = -Math.sin(fase)*amp*0.8;
+    SEB.brazoR.rotation.x  =  Math.sin(fase)*amp*0.8;
+    SEB.torso.position.y   = 0.97 + Math.abs(Math.sin(fase))*0.035*Math.min(1,v/4);
+    SEB.torso.rotation.x   = Math.min(1,v/7)*0.10;
+  } else {
+    const k = 0.25;
+    SEB.piernaL.rotation.x += (-0.5 - SEB.piernaL.rotation.x)*k;
+    SEB.piernaR.rotation.x += ( 0.3 - SEB.piernaR.rotation.x)*k;
+    SEB.brazoL.rotation.x  += (-1.5 - SEB.brazoL.rotation.x)*k;
+    SEB.brazoR.rotation.x  += (-1.5 - SEB.brazoR.rotation.x)*k;
+    SEB.torso.rotation.x   += (0.16 - SEB.torso.rotation.x)*k;
+  }
+  if(dashT > 0){
+    SEB.torso.rotation.x = -0.45;
+    SEB.mat.buzo.emissive.setHex(0x553311);
+    SEB.brazoL.rotation.x = -2.4; SEB.brazoR.rotation.x = -2.4;
+  } else {
+    SEB.mat.buzo.emissive.setHex(0x000000);
+  }
+  SEB.cabeza.rotation.y = Math.sin(fase*0.3)*0.06;
+}
+
+/* =========================================================================
+   MUNDO
+   ========================================================================= */
+const SALA1 = {x0:-18,x1:18,z0:-15,z1:15,h:8};
+const SHAFT = {cx:0, cz:-42, r:15, h:50};
+const PLATAFORMAS = [];      // {x,y,z,w,d,cp,idx}
+const CARTELES = [];
+let metaMesh = null;
+
+function matLam(c,extra){ return new THREE.MeshLambertMaterial(Object.assign({color:c},extra||{})); }
+
+function construirMundo(){
+  const mPared = matLam(COL.pared), mParedB = matLam(COL.paredB), mTecho = matLam(COL.techo);
+  const mPiso = new THREE.MeshLambertMaterial({map:texPisoGrid("#241E2E","#352C44")});
+  mPiso.map.repeat.set(9,8);
+
+  /* ---------------- SALA 1 · EL CÓMIC ---------------- */
+  const S=SALA1, w=S.x1-S.x0, d=S.z1-S.z0, cz=(S.z0+S.z1)/2;
+  const piso=new THREE.Mesh(new THREE.PlaneGeometry(w,d),mPiso);
+  piso.rotation.x=-Math.PI/2; piso.position.set(0,0,cz); scene.add(piso);
+  SOLIDS.push({x0:S.x0,x1:S.x1,y0:-2,y1:0,z0:S.z0,z1:S.z1});
+  const techo=new THREE.Mesh(new THREE.PlaneGeometry(w,d),mTecho);
+  techo.rotation.x=Math.PI/2; techo.position.set(0,S.h,cz); scene.add(techo);
+
+  caja(0.6,S.h,d, S.x0-0.3, S.h/2, cz, mPared, true);
+  caja(0.6,S.h,d, S.x1+0.3, S.h/2, cz, mPared, true);
+  caja(w+1.2,S.h,0.6, 0, S.h/2, S.z1+0.3, mParedB, true);
+  /* pared norte con hueco de puerta */
+  caja(13.4,S.h,0.6, -9.3, S.h/2, S.z0-0.3, mPared, true);
+  caja(13.4,S.h,0.6,  9.3, S.h/2, S.z0-0.3, mPared, true);
+  caja(5.2,S.h-5,0.6, 0, 5+(S.h-5)/2, S.z0-0.3, mPared, true);
+  /* puerta que se abre al leer todo */
+  puertaMesh = caja(5.2,5,0.5, 0, 2.5, S.z0-0.3, matLam(COL.rojo), true);
+  const letreroPuerta = panel(4.6,1.2, texLetrero("SALA DEL RETO","Lee las 6 páginas para abrir"), true);
+  letreroPuerta.position.set(0,3.6,S.z0+0.1); scene.add(letreroPuerta);
+  CARTELES.push({mesh:letreroPuerta, tipo:"puerta"});
+
+  /* bienvenida en la pared sur */
+  const bien = panel(11,2.75, texLetrero("SALA DEL CÓMIC","Sigue los números del piso: las seis páginas van en orden"));
+  bien.position.set(0,4.6,S.z1-0.35); bien.rotation.y=Math.PI; scene.add(bien);
+
+  /* seis páginas en orden, en U */
+  const sitios=[["w",8],["w",0.5],["w",-7],["e",-7],["e",0.5],["e",8]];
+  PAGINAS.forEach((p,i)=>{
+    const [lado,z]=sitios[i];
+    const X = lado==="w" ? S.x0+0.35 : S.x1-0.35;
+    const ry = lado==="w" ? Math.PI/2 : -Math.PI/2;
+    const g=new THREE.Group(); g.position.set(X,3.5,z); g.rotation.y=ry; scene.add(g);
+    /* marco */
+    const marco=new THREE.Mesh(new THREE.BoxGeometry(7.0,5.7,0.22),matLam(COL.tinta));
+    marco.position.z=0.11; g.add(marco);
+    const mate=new THREE.Mesh(new THREE.PlaneGeometry(6.6,5.3),new THREE.MeshBasicMaterial({color:COL.crema}));
+    mate.position.z=0.23; g.add(mate);
+    const img=new THREE.Mesh(new THREE.PlaneGeometry(6.2,4.96),
+      new THREE.MeshBasicMaterial({color:0xffffff}));
+    img.position.z=0.25; img.userData={pagina:p.n}; g.add(img);
+    CUADROS.push(img);
+    cargarPagina(p, img);
+    /* placa */
+    const pl=panel(2.3,0.79,texPlaca(p)); pl.position.set(0,-3.45,0.2); g.add(pl);
+    /* foco */
+    const foco=new THREE.Mesh(new THREE.BoxGeometry(4.2,0.12,0.5),new THREE.MeshBasicMaterial({color:0xFFF4DC}));
+    foco.position.set(0,3.25,0.7); g.add(foco);
+    /* número en el piso */
+    const num=panel(1.9,1.9,texNumPiso(p.n));
+    num.rotation.x=-Math.PI/2;
+    num.position.set(lado==="w"? S.x0+3.6 : S.x1-3.6, 0.03, z); scene.add(num);
+  });
+
+  /* ---------------- PASILLO ---------------- */
+  const pz0=S.z0, pz1=S.z0-12, pzc=(pz0+pz1)/2;
+  const pp=new THREE.Mesh(new THREE.PlaneGeometry(6,12),mPiso);
+  pp.rotation.x=-Math.PI/2; pp.position.set(0,0,pzc); scene.add(pp);
+  SOLIDS.push({x0:-3,x1:3,y0:-2,y1:0,z0:pz1,z1:pz0});
+  caja(0.5,5.4,12,-3.25,2.7,pzc,mPared,true);
+  caja(0.5,5.4,12, 3.25,2.7,pzc,mPared,true);
+  const pt=new THREE.Mesh(new THREE.PlaneGeometry(6,12),mTecho);
+  pt.rotation.x=Math.PI/2; pt.position.set(0,5.4,pzc); scene.add(pt);
+
+  /* ---------------- SALA 2 · EL RETO (vertical) ---------------- */
+  const H=SHAFT;
+  const sp=new THREE.Mesh(new THREE.PlaneGeometry(H.r*2,H.r*2),mPiso);
+  sp.rotation.x=-Math.PI/2; sp.position.set(H.cx,0,H.cz); scene.add(sp);
+  SOLIDS.push({x0:H.cx-H.r,x1:H.cx+H.r,y0:-2,y1:0,z0:H.cz-H.r,z1:H.cz+H.r});
+  caja(0.6,H.h,H.r*2, H.cx-H.r-0.3, H.h/2, H.cz, mPared, true);
+  caja(0.6,H.h,H.r*2, H.cx+H.r+0.3, H.h/2, H.cz, mPared, true);
+  caja(H.r*2+1.2,H.h,0.6, H.cx, H.h/2, H.cz-H.r-0.3, mParedB, true);
+  /* pared sur del pozo con la entrada */
+  caja(11.4,H.h,0.6, H.cx-9.3, H.h/2, H.cz+H.r+0.3, mPared, true);
+  caja(11.4,H.h,0.6, H.cx+9.3, H.h/2, H.cz+H.r+0.3, mPared, true);
+  caja(6.6,H.h-5.4,0.6, H.cx, 5.4+(H.h-5.4)/2, H.cz+H.r+0.3, mPared, true);
+
+  /* plataformas: tramos de 1.5 m entre apoyos y un cartel por dificultad */
+  const alturasCP=[4.5,9,13.5,18,22.5,27], TOPE=32;
+  const matPlat=matLam(0x5B4A6E), matCP=matLam(COL.verde);
+  let yPrev=0, k=0;
+  const colocar=(y,esCP,idxCP)=>{
+    const ang=k*0.52, rad=8.0+Math.sin(k*1.15)*2.0;
+    const x=H.cx+Math.cos(ang)*rad, z=H.cz+Math.sin(ang)*rad;
+    const w=esCP?4.8:3.3, d=esCP?4.8:3.3;
+    caja(w,0.6,d,x,y-0.3,z, esCP?matCP:matPlat, true);
+    PLATAFORMAS.push({x:x,y:y,z:z,w:w,d:d,cp:esCP,idx:idxCP});
+    if(esCP){
+      const gc=new THREE.Group();
+      gc.position.set(x,y+2.2,z);
+      gc.lookAt(new THREE.Vector3(H.cx,y+2.2,H.cz));
+      const tablero=new THREE.Mesh(new THREE.BoxGeometry(5.8,3.1,0.16),matLam(COL.tinta));
+      gc.add(tablero);
+      const cartel=panel(5.4,2.7,texCartel("DIFICULTAD "+(idxCP+1),DIFICULTADES[idxCP],COL.rojo));
+      cartel.position.z=0.1; gc.add(cartel);
+      scene.add(gc);
+      caja(0.22,2.2,0.22,x,y+0.9,z,matLam(COL.tinta),false);
+    }
+    k++;
+  };
+  alturasCP.forEach((yc,i)=>{
+    const pasos=Math.max(1,Math.round((yc-yPrev)/1.5)-1);
+    for(let s=1;s<=pasos;s++) colocar(yPrev+(yc-yPrev)*s/(pasos+1), false, -1);
+    colocar(yc,true,i);
+    yPrev=yc;
+  });
+  /* últimos apoyos y plataforma final */
+  const pasosF=Math.round((TOPE-yPrev)/1.5)-1;
+  for(let s=1;s<=pasosF;s++) colocar(yPrev+(TOPE-yPrev)*s/(pasosF+1), false, -1);
+  caja(9,0.8,9,H.cx,TOPE-0.4,H.cz,matLam(COL.amarillo),true);
+  PLATAFORMAS.push({x:H.cx,y:TOPE,z:H.cz,w:9,d:9,cp:false,idx:99,meta:true});
+  metaMesh={x:H.cx,y:TOPE,z:H.cz,w:9,d:9};
+  const gr=panel(8.4,4.2,texGracias(),true);
+  gr.position.set(H.cx,TOPE+3.2,H.cz-4.2); scene.add(gr);
+  const gr2=panel(8.4,4.2,texGracias(),true);
+  gr2.position.set(H.cx,TOPE+3.2,H.cz+4.2); gr2.rotation.y=Math.PI; scene.add(gr2);
+
+  const letreroPozo=panel(9,2.25,texLetrero("SALA DEL RETO","Sube hasta arriba: una dificultad del problema por plataforma"));
+  letreroPozo.position.set(H.cx+H.r-0.45,5.2,H.cz+7); letreroPozo.rotation.y=-Math.PI/2;
+  scene.add(letreroPozo);
+  const flecha=panel(3,3,texFlecha()); flecha.rotation.x=-Math.PI/2;
+  flecha.position.set(H.cx,0.03,H.cz+7); scene.add(flecha);
+}
+
+/* carga de cada página del cómic en su marco */
+function cargarPagina(p, mesh){
+  const src = (typeof COMIC_IMG!=="undefined" && COMIC_IMG["p"+p.n]) ? COMIC_IMG["p"+p.n] : "";
+  if(!src) return;
+  const img=new Image();
+  img.onload=()=>{ const t=new THREE.Texture(img); t.needsUpdate=true; t.anisotropy=8;
+    mesh.material.map=t; mesh.material.needsUpdate=true; };
+  img.src=src;
+}
+
+/* =========================================================================
+   JUGADOR, CÁMARA Y FÍSICA
+   ========================================================================= */
+const P = {x:0,y:0,z:10,vx:0,vy:0,vz:0,dir:Math.PI,
+           dashT:0,dashCD:0,dashX:0,dashZ:0,dashAire:false};
+const RAD=0.38, ALTO=1.85;
+const GRAV=24, VEL=7.0, JUMP=10.2, DASHV=19, DASHDUR=0.17, DASHCD=0.9;
+let camYaw=0, camPitch=0.22, camDist=6.4;
+let enSuelo=false, coyote=0, buffer=0;
+let activo=false, locked=false;
+let respawn={x:0,y:0.2,z:-30}, ultimoCP=-1, finalizado=false;
+const teclas={};
+let apuntado=null;
+
+function colide(x,y,z){
+  const ax0=x-RAD,ax1=x+RAD,ay0=y,ay1=y+ALTO,az0=z-RAD,az1=z+RAD;
+  for(let i=0;i<SOLIDS.length;i++){
+    const s=SOLIDS[i];
+    if(ax1>s.x0&&ax0<s.x1&&ay1>s.y0&&ay0<s.y1&&az1>s.z0&&az0<s.z1) return s;
+  }
+  return null;
+}
+function puntoDentro(x,y,z){
+  for(let i=0;i<SOLIDS.length;i++){
+    const s=SOLIDS[i];
+    if(x>s.x0&&x<s.x1&&y>s.y0&&y<s.y1&&z>s.z0&&z<s.z1) return true;
+  }
+  return false;
+}
+
+function fisica(dt){
+  /* entrada relativa a la cámara */
+  let fx=0,fz=0;
+  if(activo && locked){
+    if(teclas.KeyW||teclas.ArrowUp) fz+=1;
+    if(teclas.KeyS||teclas.ArrowDown) fz-=1;
+    if(teclas.KeyA||teclas.ArrowLeft) fx-=1;
+    if(teclas.KeyD||teclas.ArrowRight) fx+=1;
+  }
+  const len=Math.hypot(fx,fz)||1; fx/=len; fz/=len;
+  const sin=Math.sin(camYaw), cos=Math.cos(camYaw);
+  let dx = fx*cos - fz*sin;
+  let dz = -(fx*sin + fz*cos);
+  const hayInput = (fx!==0||fz!==0);
+
+  /* dash */
+  P.dashCD=Math.max(0,P.dashCD-dt);
+  if(P.dashT>0){
+    P.dashT-=dt;
+    P.vx=P.dashX*DASHV; P.vz=P.dashZ*DASHV; P.vy=0;
+  } else {
+    const objX=dx*VEL, objZ=dz*VEL;
+    const k=enSuelo?14:6;
+    P.vx+=(objX-P.vx)*Math.min(1,dt*k);
+    P.vz+=(objZ-P.vz)*Math.min(1,dt*k);
+    P.vy-=GRAV*dt;
+    if(P.vy<-32) P.vy=-32;
+  }
+
+  /* salto con coyote y buffer */
+  coyote = enSuelo ? 0.12 : Math.max(0,coyote-dt);
+  buffer = Math.max(0,buffer-dt);
+  if(buffer>0 && coyote>0 && P.dashT<=0){
+    P.vy=JUMP; enSuelo=false; coyote=0; buffer=0;
+  }
+
+  /* desplazamiento con resolución por eje */
+  let n=P.x+P.vx*dt;
+  if(colide(n,P.y,P.z)) P.vx=0; else P.x=n;
+  n=P.z+P.vz*dt;
+  if(colide(P.x,P.y,n)) P.vz=0; else P.z=n;
+  n=P.y+P.vy*dt;
+  const h=colide(P.x,n,P.z);
+  if(h){
+    if(P.vy<=0){ P.y=h.y1; P.vy=0; P.dashAire=false; }
+    else { P.y=h.y0-ALTO; P.vy=0; }
+  } else P.y=n;
+  enSuelo = !!colide(P.x,P.y-0.08,P.z) && P.vy<=0.02;
+  if(enSuelo) P.dashAire=false;
+
+  /* orientación del personaje */
+  if(hayInput || P.dashT>0){
+    const objetivo=Math.atan2(P.dashT>0?P.dashX:dx, P.dashT>0?P.dashZ:dz);
+    let dif=objetivo-P.dir;
+    while(dif>Math.PI) dif-=Math.PI*2;
+    while(dif<-Math.PI) dif+=Math.PI*2;
+    P.dir+=dif*Math.min(1,dt*14);
+  }
+
+  /* caída al vacío */
+  if(P.y<-8) reaparecer();
+
+  /* checkpoints y meta */
+  if(enSuelo) revisarPlataformas();
+
+  SEB.grupo.position.set(P.x,P.y,P.z);
+  SEB.grupo.rotation.y=P.dir;
+  animarSebastian(dt, Math.hypot(P.vx,P.vz), enSuelo, P.dashT);
+}
+
+function lanzarDash(){
+  if(P.dashT>0 || P.dashCD>0) return;
+  if(!enSuelo && P.dashAire) return;
+  let fx=0,fz=0;
+  if(teclas.KeyW||teclas.ArrowUp) fz+=1;
+  if(teclas.KeyS||teclas.ArrowDown) fz-=1;
+  if(teclas.KeyA||teclas.ArrowLeft) fx-=1;
+  if(teclas.KeyD||teclas.ArrowRight) fx+=1;
+  const sin=Math.sin(camYaw), cos=Math.cos(camYaw);
+  let dx,dz;
+  if(fx||fz){
+    const l=Math.hypot(fx,fz); fx/=l; fz/=l;
+    dx=fx*cos-fz*sin; dz=-(fx*sin+fz*cos);
+  } else { dx=Math.sin(P.dir); dz=Math.cos(P.dir); }
+  P.dashX=dx; P.dashZ=dz; P.dashT=DASHDUR; P.dashCD=DASHCD;
+  if(!enSuelo) P.dashAire=true;
+}
+
+function reaparecer(){
+  P.x=respawn.x; P.y=respawn.y; P.z=respawn.z;
+  P.vx=P.vy=P.vz=0; P.dashT=0;
+  if(ultimoCP>=0) aviso("¡Te caíste! Vuelves a la dificultad "+(ultimoCP+1));
+  else aviso("¡Te caíste! Vuelves al inicio del reto");
+}
+
+function revisarPlataformas(){
+  for(let i=0;i<PLATAFORMAS.length;i++){
+    const pl=PLATAFORMAS[i];
+    if(Math.abs(P.y-pl.y)>0.35) continue;
+    if(Math.abs(P.x-pl.x)>pl.w/2+0.2 || Math.abs(P.z-pl.z)>pl.d/2+0.2) continue;
+    if(pl.meta && !finalizado){
+      finalizado=true;
+      abrir("fin");
+      return;
+    }
+    if(pl.cp && pl.idx>ultimoCP){
+      ultimoCP=pl.idx;
+      respawn={x:pl.x,y:pl.y+0.2,z:pl.z};
+      aviso("Dificultad "+(pl.idx+1)+": "+DIFICULTADES[pl.idx]);
+    }
+    return;
+  }
+}
+
+/* ---------- cámara en tercera persona ---------- */
+function moverCamara(){
+  const foco=new THREE.Vector3(P.x,P.y+1.35,P.z);
+  let d=camDist;
+  const dirX=Math.sin(camYaw)*Math.cos(camPitch);
+  const dirY=Math.sin(camPitch);
+  const dirZ=Math.cos(camYaw)*Math.cos(camPitch);
+  /* acortar si hay pared entre el foco y la cámara */
+  for(let t=0.4;t<=d;t+=0.4){
+    if(puntoDentro(foco.x+dirX*t, foco.y+dirY*t, foco.z+dirZ*t)){ d=Math.max(1.6,t-0.4); break; }
+  }
+  camera.position.set(foco.x+dirX*d, foco.y+dirY*d, foco.z+dirZ*d);
+  camera.lookAt(foco);
+}
+
+/* ---------- objeto apuntado ---------- */
+function revisarCuadro(){
+  let mejor=null, dmin=6.2;
+  for(let i=0;i<CUADROS.length;i++){
+    const c=CUADROS[i];
+    const p=new THREE.Vector3(); c.getWorldPosition(p);
+    const d=Math.hypot(p.x-P.x,p.z-P.z);
+    if(d<dmin){ dmin=d; mejor=c; }
+  }
+  apuntado=mejor;
+  const el=document.getElementById("prompt");
+  if(mejor && activo){
+    const pg=PAGINAS[mejor.userData.pagina-1];
+    el.querySelector(".t").textContent="Página "+pg.n+" · "+pg.t;
+    el.querySelector(".e").textContent = leidas[pg.n] ? "E · VOLVER A LEER" : "E · ABRIR VIÑETA";
+    el.classList.add("show");
+  } else el.classList.remove("show");
+}
+
+/* =========================================================================
+   INTERFAZ
+   ========================================================================= */
+const $=s=>document.querySelector(s);
+function abrir(id){
+  document.querySelectorAll(".ov").forEach(o=>o.classList.remove("show"));
+  $("#"+id).classList.add("show");
+  if(document.pointerLockElement) document.exitPointerLock();
+}
+let pendienteDesbloqueo=false;
+function cerrar(){
+  document.querySelectorAll(".ov").forEach(o=>o.classList.remove("show"));
+  if(pendienteDesbloqueo){ pendienteDesbloqueo=false; abrir("desbloqueo"); return; }
+  if(activo) renderer.domElement.requestPointerLock();
+}
+let tToast=null;
+function aviso(txt){
+  const t=$("#toast"); t.textContent=txt; t.classList.add("show");
+  clearTimeout(tToast); tToast=setTimeout(()=>t.classList.remove("show"),3800);
+}
+function pintarPaginas(){
+  const c=$("#pags"); c.innerHTML="";
+  PAGINAS.forEach(p=>{
+    const i=document.createElement("i");
+    i.textContent=p.n; if(leidas[p.n]) i.className="ok";
+    c.appendChild(i);
+  });
+}
+
+/* ---------- visor de páginas ---------- */
+let paginaActual=1;
+function verPagina(n){
+  paginaActual=n;
+  const p=PAGINAS[n-1];
+  $("#visorTop .num").textContent="PÁGINA "+n+" / 6";
+  $("#visorTop .tit").textContent=p.t;
+  $("#visorPie").textContent=p.pie;
+  $("#visorImg").src=(typeof COMIC_IMG!=="undefined"&&COMIC_IMG["p"+n])?COMIC_IMG["p"+n]:"";
+  const primera=!leidas[n];
+  leidas[n]=true; pintarPaginas();
+  abrir("visor");
+  if(primera && Object.keys(leidas).length===PAGINAS.length) abrirPuerta();
+}
+function abrirPuerta(){
+  if(puertaAbierta) return;
+  puertaAbierta=true;
+  const i=SOLIDS.indexOf(SOLIDS.find(s=>s.mesh===puertaMesh));
+  if(i>=0) SOLIDS.splice(i,1);
+  puertaMesh.visible=false;
+  const c=CARTELES.find(x=>x.tipo==="puerta");
+  if(c) c.mesh.material.map=texLetrero("SALA DEL RETO","¡Abierta! Sigue derecho por el pasillo");
+  pendienteDesbloqueo=true;
+}
+
+/* ---------- audio de introducción ---------- */
+const audio=$("#audioIntro");
+let introLista=false;
+function fmt(s){ s=Math.max(0,s|0); return (s/60|0)+":"+String(s%60).padStart(2,"0"); }
+function entrar(){
+  if(introLista) return;
+  introLista=true;
+  try{ audio.pause(); }catch(e){}
+  $("#intro").classList.remove("show");
+  activo=true;
+  aviso("Haz clic en la pantalla para controlar a Sebastián");
+}
+$("#play").onclick=()=>{
+  $("#antesDePlay").style.display="none";
+  $("#reproduciendo").style.display="block";
+  audio.play().catch(()=>{
+    $("#saltar").style.display="inline-block";
+    $("#tiempo").textContent="No se pudo reproducir el audio en este navegador.";
+  });
+  setTimeout(()=>{ $("#saltar").style.display="inline-block"; },8000);
+};
+audio.addEventListener("timeupdate",()=>{
+  const d=audio.duration||0;
+  $("#barra i").style.width=(d?audio.currentTime/d*100:0)+"%";
+  $("#tiempo").textContent=fmt(audio.currentTime)+" / "+fmt(d);
+});
+audio.addEventListener("ended",entrar);
+audio.addEventListener("error",()=>{ $("#saltar").style.display="inline-block"; });
+$("#saltar").onclick=entrar;
+$("#volverInicio").onclick=()=>{
+  P.x=0;P.y=0;P.z=10;P.vx=P.vy=P.vz=0;
+  camYaw=0; finalizado=false; cerrar();
+};
+$("#pprev").onclick=()=>verPagina(paginaActual>1?paginaActual-1:6);
+$("#pnext").onclick=()=>verPagina(paginaActual<6?paginaActual+1:1);
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=cerrar);
+
+/* =========================================================================
+   ARRANQUE Y BUCLE
+   ========================================================================= */
+function init(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x15101D);
+  scene.fog=new THREE.Fog(0x15101D,30,95);
+  camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,0.1,260);
+  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
+  renderer.setSize(innerWidth,innerHeight);
+  $("#app").appendChild(renderer.domElement);
+  clock=new THREE.Clock();
+
+  scene.add(new THREE.AmbientLight(0xffffff,0.62));
+  scene.add(new THREE.HemisphereLight(0xC9B8FF,0x2A2038,0.5));
+  const sol=new THREE.DirectionalLight(0xFFE9C9,0.55);
+  sol.position.set(12,24,8); scene.add(sol);
+  const farol=new THREE.PointLight(0xFFE2B8,0.6,16,2);
+  farol.position.set(0,2.4,0); scene.add(farol); SEB.farol=farol;
+
+  construirMundo();
+  crearSebastian();
+  SEB.grupo.position.set(P.x,P.y,P.z);
+  pintarPaginas();
+
+  addEventListener("resize",()=>{
+    camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+  renderer.domElement.addEventListener("click",()=>{
+    if(activo && !document.querySelector(".ov.show")) renderer.domElement.requestPointerLock();
+  });
+  renderer.domElement.addEventListener("contextmenu",e=>{ e.preventDefault(); if(activo&&locked) lanzarDash(); });
+  document.addEventListener("pointerlockchange",()=>{ locked=document.pointerLockElement===renderer.domElement; });
+  document.addEventListener("mousemove",e=>{
+    if(!locked) return;
+    camYaw-=e.movementX*0.0026;
+    camPitch+=e.movementY*0.0020;
+    camPitch=Math.max(-0.42,Math.min(1.05,camPitch));
+  });
+  addEventListener("keydown",e=>{
+    if(e.code==="Escape") return;
+    if(document.querySelector(".ov.show")) return;
+    teclas[e.code]=true;
+    if(e.code==="Space"){ e.preventDefault(); buffer=0.12; }
+    if(e.code==="ShiftLeft"||e.code==="ShiftRight") lanzarDash();
+    if(e.code==="KeyE" && apuntado) verPagina(apuntado.userData.pagina);
+  });
+  addEventListener("keyup",e=>{ teclas[e.code]=false; });
+  addEventListener("blur",()=>{ for(const k in teclas) teclas[k]=false; });
+
+  bucle();
+}
+
+let tHud=0, camCine=0;
+function bucle(){
+  requestAnimationFrame(bucle);
+  const dt=Math.min(clock.getDelta(),0.045);
+  if(activo){
+    fisica(dt);
+    moverCamara();
+    SEB.farol.position.set(P.x,P.y+2.2,P.z);
+    tHud+=dt;
+    if(tHud>0.1){ tHud=0; revisarCuadro(); hud(); }
+  } else {
+    /* cámara cinematográfica mientras suena la introducción */
+    camCine+=dt*0.12;
+    camera.position.set(Math.sin(camCine)*15,5.5+Math.sin(camCine*0.7)*1.5,8+Math.cos(camCine)*13);
+    camera.lookAt(0,2.2,0);
+    animarSebastian(dt,0,true,0);
+  }
+  renderer.render(scene,camera);
+}
+
+function hud(){
+  const s=$("#sala");
+  let nombre,sub;
+  if(P.z>-16){ nombre="SALA DEL CÓMIC"; sub="Seis páginas en orden · acércate y pulsa E"; }
+  else if(P.z>-27){ nombre="PASILLO"; sub="Hacia la sala del reto"; }
+  else { nombre="SALA DEL RETO"; sub = ultimoCP>=0 ? ("Dificultad "+(ultimoCP+1)+" de 6 alcanzada") : "Sube saltando de plataforma en plataforma"; }
+  s.querySelector(".n").textContent=nombre;
+  s.querySelector(".s").textContent=sub;
+
+  const caja2=$("#alturaBox");
+  if(P.z<-27){ caja2.style.display="block"; caja2.querySelector(".v").textContent=Math.max(0,P.y).toFixed(1)+" m"; }
+  else caja2.style.display="none";
+
+  $("#habDash").className = "hab"+(P.dashCD>0?" off":" listo");
+  $("#habSalto").className = "hab"+(enSuelo||coyote>0?" listo":" off");
+  $("#ayuda").innerHTML = locked
+    ? '<b>W A S D</b> moverse · <b>mouse</b> cámara · <b>espacio</b> saltar · <b>shift</b> dash · <b>E</b> abrir · <b>ESC</b> soltar mouse'
+    : '<b style="color:#F2C14E">HAZ CLIC EN LA PANTALLA PARA CONTROLAR A SEBASTIÁN</b>';
+}
+
+if(!window.THREE){
+  document.getElementById("antesDePlay").innerHTML =
+    "<p>No se pudo cargar Three.js. Abre la página con conexión a internet.</p>";
+} else init();
+</script>
+</body>
+</html>
