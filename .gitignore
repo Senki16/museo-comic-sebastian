@@ -8,3 +8,6 @@ node_modules/
 
 # Los audios sueltos no van al repositorio: ya estan incrustados en narracion.js
 narracion/
+
+# Originales de ChatGPT en PNG: ya van optimizados dentro de texturas.js
+texturas/

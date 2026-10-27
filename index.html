@@ -76,6 +76,27 @@ button{font-family:inherit}
   background:rgba(247,241,228,.78);padding:6px 15px;border-radius:4px}
 #ayuda b{color:#A8470F}
 
+/* ---------------- controles táctiles ---------------- */
+#movil{position:fixed;inset:0;z-index:20;display:none;pointer-events:none;touch-action:none}
+body.tactil #movil{display:block}
+body.tactil #ayuda{display:none}
+body.tactil #habil{display:none}
+#camzona{position:absolute;inset:0;pointer-events:auto}
+#joy{position:absolute;left:26px;bottom:30px;width:140px;height:140px;border-radius:50%;
+  background:rgba(247,241,228,.26);border:3px solid rgba(20,16,25,.35);pointer-events:auto;
+  touch-action:none;backdrop-filter:blur(2px)}
+#joyKnob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+  background:var(--papel);border:3px solid var(--tinta);box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.btnT{position:absolute;pointer-events:auto;touch-action:none;border-radius:50%;border:3px solid var(--tinta);
+  display:flex;align-items:center;justify-content:center;font-weight:bold;letter-spacing:.06em;
+  color:var(--tinta);box-shadow:0 4px 12px rgba(0,0,0,.3);user-select:none}
+.btnT:active,.btnT.on{transform:scale(.93);filter:brightness(.88)}
+#btSalto{right:28px;bottom:40px;width:104px;height:104px;background:var(--amarillo);font-size:15px}
+#btDash{right:142px;bottom:58px;width:82px;height:82px;background:var(--azul);color:#fff;
+  border-color:var(--tinta);font-size:14px}
+#btE{right:44px;bottom:160px;width:78px;height:78px;background:var(--naranja);color:#fff;font-size:15px;display:none}
+#btE.ver{display:flex}
+
 /* ---------------- capas ---------------- */
 .ov{position:fixed;inset:0;z-index:40;background:rgba(14,11,18,.88);display:none;
   align-items:center;justify-content:center;padding:24px;overflow:auto}
@@ -127,15 +148,18 @@ button{font-family:inherit}
 #saltar:hover{border-color:var(--tinta);color:var(--tinta)}
 
 /* visor de página */
-#visor .card{max-width:1180px;padding:0;background:var(--tinta);border-color:var(--tinta)}
-#visorTop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;
-  background:var(--tinta);color:var(--papel)}
+#visor .card{max-width:min(1240px,97vw);max-height:95vh;padding:0;background:var(--tinta);
+  border-color:var(--tinta);display:flex;flex-direction:column;overflow:hidden}
+#visorTop{display:flex;align-items:center;gap:10px;padding:11px 62px 11px 14px;flex:0 0 auto;
+  background:var(--tinta);color:var(--papel);flex-wrap:wrap}
 #visorTop .num{background:var(--amarillo);color:var(--tinta);font-weight:bold;font-size:13px;
   padding:5px 11px;border-radius:2px;letter-spacing:.1em}
 #visorTop .tit{font-size:15px;font-weight:bold;flex:1}
-#visorImg{display:block;width:100%;background:#000}
-#visorPie{padding:13px 16px;background:var(--papel);color:var(--tinta);font-size:13.5px;line-height:1.5}
-.navp{display:flex;gap:8px}
+#visorImg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;
+  object-fit:contain;background:#07060A}
+#visorPie{flex:0 0 auto;padding:11px 16px;background:var(--papel);color:var(--tinta);
+  font-size:13.5px;line-height:1.45;max-height:22vh;overflow:auto}
+.navp{display:flex;gap:7px;margin-left:auto;flex-wrap:wrap}
 .navp button{background:var(--papel);border:2px solid var(--papel);color:var(--tinta);font-weight:bold;
   font-size:12px;padding:6px 12px;border-radius:2px;cursor:pointer}
 .navp button:hover{background:var(--amarillo);border-color:var(--amarillo)}
@@ -152,6 +176,19 @@ button{font-family:inherit}
   border-radius:3px}
 .btn:hover{background:var(--rojo);border-color:var(--rojo)}
 .lista{text-align:left;font-size:14px;line-height:1.7;margin:0;padding-left:20px}
+
+@media(max-width:820px){
+  #sala{max-width:210px;padding:7px 10px}
+  #sala .n{font-size:14px} #sala .s{display:none}
+  #pags i{width:20px;height:24px;font-size:10px}
+  .card{padding:20px 16px}
+  #visorTop{padding:9px 54px 9px 10px;gap:7px}
+  #visorTop .tit{display:none}
+  .navp button{font-size:10.5px;padding:6px 9px}
+  #visorPie{font-size:12.5px;max-height:26vh}
+  #portada .pie{font-size:13px}
+  #intro h1{font-size:28px}
+}
 </style>
 </head>
 <body>
@@ -168,6 +205,13 @@ button{font-family:inherit}
   </div>
   <div id="alturaBox"><div class="v">0 m</div><div class="l">ALTURA</div></div>
   <div id="toast"></div>
+  <div id="movil">
+    <div id="camzona"></div>
+    <div id="joy"><div id="joyKnob"></div></div>
+    <div class="btnT" id="btSalto">SALTO</div>
+    <div class="btnT" id="btDash">DASH</div>
+    <div class="btnT" id="btE">ABRIR</div>
+  </div>
   <div id="ayuda"><b>W A S D</b> moverse · <b>mouse</b> cámara · <b>espacio</b> saltar · <b>shift</b> dash · <b>E</b> abrir · <b>ESC</b> soltar mouse</div>
 </div>
 
@@ -267,6 +311,8 @@ button{font-family:inherit}
 <script src="comic_embed.js"></script>
 <!-- narracion.js lo genera el proyecto con las voces de ElevenLabs; si falta, el navegador narra el texto -->
 <script src="narracion.js"></script>
+<!-- texturas generadas con ChatGPT: piso, paredes y puerta. Si falta, se usan las procedurales -->
+<script src="texturas.js"></script>
 <script>
 /* =========================================================================
    DATOS
@@ -314,7 +360,7 @@ const SOLUCION = "LA SOLUCIÓN · un QR con todo el campus: salones, trámites y
 let scene, camera, renderer, clock;
 const SOLIDS = [];       // cajas de colisión {x0,x1,y0,y1,z0,z1}
 const CUADROS = [];      // viñetas examinables
-let puertaMesh = null, puertaAbierta = false;
+let puertaMesh = null, puertaAbierta = false, puertaIzq = null, puertaDer = null, puertaT = 0;
 
 const leidas = {};       // páginas ya abiertas
 /* Paleta pastel derivada del azul y el amarillo institucionales del Pascual Bravo */
@@ -403,6 +449,62 @@ function texFlecha(){
   x.closePath(); x.fill();
   return tex(c);
 }
+/* baldosa institucional: piso de museo */
+function texPisoSala(){
+  const c=cv(512,512), x=c.getContext("2d");
+  x.fillStyle="#E7DBBC"; x.fillRect(0,0,512,512);
+  const t=128;
+  for(let i=0;i<4;i++) for(let j=0;j<4;j++){
+    const tono = ((i+j)%2===0) ? "#EADFC4" : "#E3D5B2";
+    x.fillStyle = (i===1&&j===2)||(i===3&&j===0) ? "#D7DFE9" : tono;
+    x.fillRect(i*t+3, j*t+3, t-6, t-6);
+    x.strokeStyle="rgba(255,255,255,.45)"; x.lineWidth=2;
+    x.strokeRect(i*t+5, j*t+5, t-10, t-10);
+  }
+  x.strokeStyle="#CDBE98"; x.lineWidth=6;
+  for(let i=0;i<=4;i++){
+    x.beginPath(); x.moveTo(i*t,0); x.lineTo(i*t,512); x.stroke();
+    x.beginPath(); x.moveTo(0,i*t); x.lineTo(512,i*t); x.stroke();
+  }
+  const tx=tex(c); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; return tx;
+}
+/* hoja de puerta: vidrio institucional con cartel */
+function texPuerta(){
+  const c=cv(512,1024), x=c.getContext("2d");
+  x.fillStyle="#2F4A66"; x.fillRect(0,0,512,1024);
+  x.fillStyle="#1B3A5C"; x.fillRect(0,0,512,26); x.fillRect(0,998,512,26);
+  /* vidrio */
+  const g=x.createLinearGradient(60,80,452,560);
+  g.addColorStop(0,"#BFD6EC"); g.addColorStop(.5,"#9DBEDD"); g.addColorStop(1,"#CFE0F1");
+  x.fillStyle=g; x.fillRect(60,80,392,480);
+  x.strokeStyle="#16304C"; x.lineWidth=12; x.strokeRect(60,80,392,480);
+  x.strokeStyle="rgba(255,255,255,.5)"; x.lineWidth=16;
+  x.beginPath(); x.moveTo(110,520); x.lineTo(300,120); x.stroke();
+  x.beginPath(); x.moveTo(210,540); x.lineTo(380,170); x.stroke();
+  /* panel inferior */
+  x.fillStyle="#27405A"; x.fillRect(60,620,392,320);
+  x.strokeStyle="#16304C"; x.lineWidth=10; x.strokeRect(60,620,392,320);
+  /* cartel */
+  x.fillStyle="#F2C14E"; x.fillRect(96,690,320,120);
+  x.fillStyle="#141019"; x.textAlign="center";
+  x.font="bold 46px Trebuchet MS, Arial, sans-serif";
+  x.fillText("SALA DEL", 256, 740);
+  x.fillText("RETO", 256, 790);
+  return tex(c);
+}
+function texFlechaPiso(){
+  const c=cv(256,256), x=c.getContext("2d");
+  x.clearRect(0,0,256,256);
+  x.fillStyle="rgba(242,193,78,.95)";
+  x.beginPath(); x.moveTo(128,30); x.lineTo(214,138); x.lineTo(166,138);
+  x.lineTo(166,226); x.lineTo(90,226); x.lineTo(90,138); x.lineTo(42,138);
+  x.closePath(); x.fill();
+  x.strokeStyle="rgba(27,58,92,.95)"; x.lineWidth=9;
+  x.beginPath(); x.moveTo(128,30); x.lineTo(214,138); x.lineTo(166,138);
+  x.lineTo(166,226); x.lineTo(90,226); x.lineTo(90,138); x.lineTo(42,138);
+  x.closePath(); x.stroke();
+  return tex(c);
+}
 function texPisoGrid(c1,c2){
   const c=cv(128,128), x=c.getContext("2d");
   x.fillStyle=c1; x.fillRect(0,0,128,128);
@@ -420,6 +522,29 @@ function texGracias(){
   x.font="bold 34px Trebuchet MS, Arial, sans-serif";
   wrap(x,SOLUCION,900,42,512,360);
   return tex(c);
+}
+
+/* Textura de pared generada con el generador de imágenes de Canva y empotrada aquí */
+const TEX_PARED = "data:image/jpeg;base64,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";
+/* aplica una textura de ChatGPT a un material ya creado, en cuanto carga */
+function aplicarTexIA(clave, mat, rx, ry){
+  if(typeof TEX_IMG==="undefined" || !TEX_IMG[clave]) return;
+  const img=new Image();
+  img.onload=()=>{
+    const t=new THREE.Texture(img);
+    t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry);
+    t.anisotropy=8; t.needsUpdate=true;
+    mat.map=t; mat.color.setHex(0xffffff); mat.needsUpdate=true;
+  };
+  img.src=TEX_IMG[clave];
+}
+function matPared(largo, tinte){
+  const usaIA = (typeof TEX_IMG!=="undefined" && TEX_IMG.pared);
+  const t = new THREE.TextureLoader().load(usaIA ? TEX_IMG.pared : TEX_PARED);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(Math.max(1, Math.round(largo/(usaIA?5:4.2))), 1);
+  t.anisotropy = 8;
+  return new THREE.MeshLambertMaterial({ map:t, color: tinte || 0xFFFFFF });
 }
 
 /* ---------- primitivas ---------- */
@@ -547,9 +672,11 @@ let metaMesh = null;
 function matLam(c,extra){ return new THREE.MeshLambertMaterial(Object.assign({color:c},extra||{})); }
 
 function construirMundo(){
-  const mPared = matLam(COL.pared), mParedB = matLam(COL.paredB), mTecho = matLam(COL.techo);
-  const mPiso = new THREE.MeshLambertMaterial({map:texPisoGrid("#E2D3AC","#B9C8DA")});
+  const mPared = matPared(30), mParedB = matPared(36, 0xF2F7FC), mTecho = matLam(COL.techo);
+  const mParedCorta = matPared(13), mParedPozo = matPared(30, 0xEAF1F8);
+  const mPiso = new THREE.MeshLambertMaterial({map:texPisoSala()});
   mPiso.map.repeat.set(9,8);
+  aplicarTexIA("piso", mPiso, 5, 4);
 
   /* ---------------- SALA 1 · EL CÓMIC ---------------- */
   const S=SALA1, w=S.x1-S.x0, d=S.z1-S.z0, cz=(S.z0+S.z1)/2;
@@ -563,13 +690,34 @@ function construirMundo(){
   caja(0.6,S.h,d, S.x1+0.3, S.h/2, cz, mPared, true);
   caja(w+1.2,S.h,0.6, 0, S.h/2, S.z1+0.3, mParedB, true);
   /* pared norte con hueco de puerta */
-  caja(13.4,S.h,0.6, -9.3, S.h/2, S.z0-0.3, mPared, true);
-  caja(13.4,S.h,0.6,  9.3, S.h/2, S.z0-0.3, mPared, true);
-  caja(5.2,S.h-5,0.6, 0, 5+(S.h-5)/2, S.z0-0.3, mPared, true);
-  /* puerta que se abre al leer todo */
-  puertaMesh = caja(5.2,5,0.5, 0, 2.5, S.z0-0.3, matLam(COL.rojo), true);
+  caja(13.4,S.h,0.6, -9.3, S.h/2, S.z0-0.3, mParedCorta, true);
+  caja(13.4,S.h,0.6,  9.3, S.h/2, S.z0-0.3, mParedCorta, true);
+  caja(5.2,S.h-5,0.6, 0, 5+(S.h-5)/2, S.z0-0.3, mParedCorta, true);
+  /* ---- puerta doble institucional, con marco, cartel y apertura animada ---- */
+  const zp=S.z0-0.3, mMarco=matLam(COL.marco), mPuerta=new THREE.MeshLambertMaterial({map:texPuerta()});
+  aplicarTexIA("puerta", mPuerta, 1, 1);
+  const mPuertaDer=new THREE.MeshLambertMaterial({map:texPuerta()});
+  aplicarTexIA("puerta", mPuertaDer, -1, 1);            // espejo: el tirador queda junto a la juntura
+  const conTexIA=(typeof TEX_IMG!=="undefined" && TEX_IMG.puerta);
+  caja(0.55,5.4,0.62,-2.92,2.70,zp,mMarco,false);
+  caja(0.55,5.4,0.62, 2.92,2.70,zp,mMarco,false);
+  caja(6.4,0.55,0.62, 0,5.18,zp,mMarco,false);
+  caja(6.4,0.18,0.70, 0,0.09,zp,matLam(COL.azulMedio),false);
+  const hoja=(lado)=>{
+    const g=new THREE.Group(); g.position.set(lado*2.62,2.45,zp); scene.add(g);
+    const m=new THREE.Mesh(new THREE.BoxGeometry(2.5,4.7,0.15), lado>0 ? mPuertaDer : mPuerta);
+    m.position.x=-lado*1.25; g.add(m);
+    const tir=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.62,8),matLam(0xD9C27A));
+    tir.position.set(-lado*2.18,-0.1,0.13); tir.rotation.x=Math.PI/2;
+    if(!conTexIA) g.add(tir);                            // la textura ya trae su tirador
+    return g;
+  };
+  puertaIzq=hoja(-1); puertaDer=hoja(1);
+  /* la colisión es una caja invisible: las hojas solo son la parte visual */
+  puertaMesh = caja(5.3,5,0.4, 0, 2.5, zp, mMarco, true);
+  puertaMesh.visible=false;
   const letreroPuerta = panel(4.6,1.2, texLetrero("SALA DEL RETO","Lee las 6 páginas para abrir"), true);
-  letreroPuerta.position.set(0,3.6,S.z0+0.1); scene.add(letreroPuerta);
+  letreroPuerta.position.set(0,6.35,S.z0+0.05); scene.add(letreroPuerta);
   CARTELES.push({mesh:letreroPuerta, tipo:"puerta"});
 
   /* bienvenida en la pared sur */
@@ -604,13 +752,29 @@ function construirMundo(){
     num.position.set(lado==="w"? S.x0+3.6 : S.x1-3.6, 0.03, z); scene.add(num);
   });
 
+  /* flechas en el piso que marcan el orden de lectura 1 -> 6 */
+  const texFl=texFlechaPiso();
+  const flechaRuta=(x,z,yaw)=>{
+    const f=new THREE.Group(); f.position.set(x,0.025,z); f.rotation.y=yaw;
+    const pl=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.5),
+      new THREE.MeshBasicMaterial({map:texFl,transparent:true}));
+    pl.rotation.x=-Math.PI/2; f.add(pl); scene.add(f);
+  };
+  const ruta=[];
+  for(let z=6.2;z>=-5.5;z-=2.6) ruta.push([-13.2,z,0]);          // sube por la izquierda
+  ruta.push([-11.4,-9.4,-Math.PI/4]);
+  for(let x=-8.5;x<=8.5;x+=2.8) ruta.push([x,-10.6,-Math.PI/2]); // cruza al fondo
+  ruta.push([11.4,-9.4,-Math.PI*3/4]);
+  for(let z=-5.5;z<=6.2;z+=2.6) ruta.push([13.2,z,Math.PI]);     // baja por la derecha
+  ruta.forEach(r=>flechaRuta(r[0],r[1],r[2]));
+
   /* ---------------- PASILLO ---------------- */
   const pz0=S.z0, pz1=S.z0-12, pzc=(pz0+pz1)/2;
   const pp=new THREE.Mesh(new THREE.PlaneGeometry(6,12),mPiso);
   pp.rotation.x=-Math.PI/2; pp.position.set(0,0,pzc); scene.add(pp);
   SOLIDS.push({x0:-3,x1:3,y0:-2,y1:0,z0:pz1,z1:pz0});
-  caja(0.5,5.4,12,-3.25,2.7,pzc,mPared,true);
-  caja(0.5,5.4,12, 3.25,2.7,pzc,mPared,true);
+  caja(0.5,5.4,12,-3.25,2.7,pzc,mParedCorta,true);
+  caja(0.5,5.4,12, 3.25,2.7,pzc,mParedCorta,true);
   const pt=new THREE.Mesh(new THREE.PlaneGeometry(6,12),mTecho);
   pt.rotation.x=Math.PI/2; pt.position.set(0,5.4,pzc); scene.add(pt);
 
@@ -619,8 +783,8 @@ function construirMundo(){
   const sp=new THREE.Mesh(new THREE.PlaneGeometry(H.r*2,H.r*2),mPiso);
   sp.rotation.x=-Math.PI/2; sp.position.set(H.cx,0,H.cz); scene.add(sp);
   SOLIDS.push({x0:H.cx-H.r,x1:H.cx+H.r,y0:-2,y1:0,z0:H.cz-H.r,z1:H.cz+H.r});
-  caja(0.6,H.h,H.r*2, H.cx-H.r-0.3, H.h/2, H.cz, mPared, true);
-  caja(0.6,H.h,H.r*2, H.cx+H.r+0.3, H.h/2, H.cz, mPared, true);
+  caja(0.6,H.h,H.r*2, H.cx-H.r-0.3, H.h/2, H.cz, mParedPozo, true);
+  caja(0.6,H.h,H.r*2, H.cx+H.r+0.3, H.h/2, H.cz, mParedPozo, true);
   caja(H.r*2+1.2,H.h,0.6, H.cx, H.h/2, H.cz-H.r-0.3, mParedB, true);
   /* pared sur del pozo con la entrada */
   caja(11.4,H.h,0.6, H.cx-9.3, H.h/2, H.cz+H.r+0.3, mPared, true);
@@ -714,20 +878,32 @@ function puntoDentro(x,y,z){
   return false;
 }
 
-function fisica(dt){
-  /* entrada relativa a la cámara */
+/* entrada de movimiento: teclado o joystick táctil */
+function dirEntrada(){
   let fx=0,fz=0;
-  if(activo && locked){
+  if(!activo) return {fx:0,fz:0};
+  if(locked || TACTIL){
     if(teclas.KeyW||teclas.ArrowUp) fz+=1;
     if(teclas.KeyS||teclas.ArrowDown) fz-=1;
     if(teclas.KeyA||teclas.ArrowLeft) fx-=1;
     if(teclas.KeyD||teclas.ArrowRight) fx+=1;
   }
+  if(joy.tocando){ fx+=joy.x; fz+=-joy.y; }
+  const l=Math.hypot(fx,fz);
+  if(l>1){ fx/=l; fz/=l; }
+  return {fx:fx, fz:fz};
+}
+
+function fisica(dt){
+  /* entrada relativa a la cámara */
+  const ent=dirEntrada();
+  let fx=ent.fx, fz=ent.fz;
+  const magnitud=Math.min(1,Math.hypot(fx,fz));
   const len=Math.hypot(fx,fz)||1; fx/=len; fz/=len;
   const sin=Math.sin(camYaw), cos=Math.cos(camYaw);
   let dx = fx*cos - fz*sin;
   let dz = -(fx*sin + fz*cos);
-  const hayInput = (fx!==0||fz!==0);
+  const hayInput = magnitud>0.05;
 
   /* dash */
   P.dashCD=Math.max(0,P.dashCD-dt);
@@ -735,7 +911,7 @@ function fisica(dt){
     P.dashT-=dt;
     P.vx=P.dashX*DASHV; P.vz=P.dashZ*DASHV; P.vy=0;
   } else {
-    const objX=dx*VEL, objZ=dz*VEL;
+    const objX=dx*VEL*magnitud, objZ=dz*VEL*magnitud;
     const k=enSuelo?14:6;
     P.vx+=(objX-P.vx)*Math.min(1,dt*k);
     P.vz+=(objZ-P.vz)*Math.min(1,dt*k);
@@ -787,14 +963,11 @@ function fisica(dt){
 function lanzarDash(){
   if(P.dashT>0 || P.dashCD>0) return;
   if(!enSuelo && P.dashAire) return;
-  let fx=0,fz=0;
-  if(teclas.KeyW||teclas.ArrowUp) fz+=1;
-  if(teclas.KeyS||teclas.ArrowDown) fz-=1;
-  if(teclas.KeyA||teclas.ArrowLeft) fx-=1;
-  if(teclas.KeyD||teclas.ArrowRight) fx+=1;
+  const e=dirEntrada();
+  let fx=e.fx, fz=e.fz;
   const sin=Math.sin(camYaw), cos=Math.cos(camYaw);
   let dx,dz;
-  if(fx||fz){
+  if(Math.hypot(fx,fz)>0.05){
     const l=Math.hypot(fx,fz); fx/=l; fz/=l;
     dx=fx*cos-fz*sin; dz=-(fx*sin+fz*cos);
   } else { dx=Math.sin(P.dir); dz=Math.cos(P.dir); }
@@ -828,6 +1001,74 @@ function revisarPlataformas(){
   }
 }
 
+/* ---------- controles táctiles (joystick, salto, dash, abrir) ---------- */
+const TACTIL = ("ontouchstart" in window) || (navigator.maxTouchPoints||0) > 0;
+const joy = {tocando:false, id:null, cx:0, cy:0, x:0, y:0};
+let camTouchId=null, camTX=0, camTY=0;
+
+function initTactil(){
+  if(!TACTIL) return;
+  document.body.classList.add("tactil");
+  const base=$("#joy"), knob=$("#joyKnob"), R=46;
+
+  const mover=(t)=>{
+    let dx=t.clientX-joy.cx, dy=t.clientY-joy.cy;
+    const d=Math.hypot(dx,dy);
+    if(d>R){ dx=dx/d*R; dy=dy/d*R; }
+    knob.style.transform="translate("+dx+"px,"+dy+"px)";
+    joy.x=dx/R; joy.y=dy/R;
+  };
+  base.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    const t=e.changedTouches[0], r=base.getBoundingClientRect();
+    joy.tocando=true; joy.id=t.identifier;
+    joy.cx=r.left+r.width/2; joy.cy=r.top+r.height/2;
+    mover(t);
+  },{passive:false});
+  base.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches) if(t.identifier===joy.id) mover(t);
+  },{passive:false});
+  const soltar=e=>{
+    for(const t of e.changedTouches) if(t.identifier===joy.id){
+      joy.tocando=false; joy.id=null; joy.x=0; joy.y=0;
+      knob.style.transform="translate(0,0)";
+    }
+  };
+  base.addEventListener("touchend",soltar);
+  base.addEventListener("touchcancel",soltar);
+
+  /* arrastrar para mover la cámara */
+  const zona=$("#camzona");
+  zona.addEventListener("touchstart",e=>{
+    if(camTouchId!==null) return;
+    const t=e.changedTouches[0];
+    camTouchId=t.identifier; camTX=t.clientX; camTY=t.clientY;
+  },{passive:true});
+  zona.addEventListener("touchmove",e=>{
+    for(const t of e.changedTouches) if(t.identifier===camTouchId){
+      camYaw-=(t.clientX-camTX)*0.0062;
+      camPitch+=(t.clientY-camTY)*0.0050;
+      camPitch=Math.max(-0.42,Math.min(1.05,camPitch));
+      camTX=t.clientX; camTY=t.clientY;
+    }
+  },{passive:true});
+  const finCam=e=>{ for(const t of e.changedTouches) if(t.identifier===camTouchId) camTouchId=null; };
+  zona.addEventListener("touchend",finCam);
+  zona.addEventListener("touchcancel",finCam);
+
+  const boton=(id,accion,sostener)=>{
+    const b=$(id);
+    b.addEventListener("touchstart",e=>{ e.preventDefault(); b.classList.add("on"); accion(); },{passive:false});
+    const fin=e=>{ e.preventDefault(); b.classList.remove("on"); if(sostener) sostener(); };
+    b.addEventListener("touchend",fin,{passive:false});
+    b.addEventListener("touchcancel",fin,{passive:false});
+  };
+  boton("#btSalto",()=>{ buffer=0.12; });
+  boton("#btDash",()=>{ lanzarDash(); });
+  boton("#btE",()=>{ if(apuntado) verPagina(apuntado.userData.pagina); });
+}
+
 /* ---------- cámara en tercera persona ---------- */
 function moverCamara(){
   const foco=new THREE.Vector3(P.x,P.y+1.35,P.z);
@@ -853,11 +1094,13 @@ function revisarCuadro(){
     if(d<dmin){ dmin=d; mejor=c; }
   }
   apuntado=mejor;
+  const bt=$("#btE"); if(bt) bt.className="btnT"+(mejor&&activo?" ver":"");
   const el=document.getElementById("prompt");
   if(mejor && activo){
     const pg=PAGINAS[mejor.userData.pagina-1];
     el.querySelector(".t").textContent="Página "+pg.n+" · "+pg.t;
-    el.querySelector(".e").textContent = leidas[pg.n] ? "E · VOLVER A LEER" : "E · ABRIR VIÑETA";
+    const tecla = TACTIL ? "TOCA ABRIR" : "E";
+    el.querySelector(".e").textContent = tecla + (leidas[pg.n] ? " · VOLVER A LEER" : " · ABRIR VIÑETA");
     el.classList.add("show");
   } else el.classList.remove("show");
 }
@@ -946,7 +1189,6 @@ function abrirPuerta(){
   puertaAbierta=true;
   const i=SOLIDS.indexOf(SOLIDS.find(s=>s.mesh===puertaMesh));
   if(i>=0) SOLIDS.splice(i,1);
-  puertaMesh.visible=false;
   const c=CARTELES.find(x=>x.tipo==="puerta");
   if(c) c.mesh.material.map=texLetrero("SALA DEL RETO","¡Abierta! Sigue derecho por el pasillo");
   pendienteDesbloqueo=true;
@@ -962,7 +1204,8 @@ function entrar(){
   try{ audio.pause(); }catch(e){}
   $("#intro").classList.remove("show");
   activo=true;
-  aviso("Haz clic en la pantalla para controlar a Sebastián");
+  aviso(TACTIL ? "Usa el joystick para mover a Sebastián"
+               : "Haz clic en la pantalla para controlar a Sebastián");
 }
 $("#play").onclick=()=>{
   $("#antesDePlay").style.display="none";
@@ -1034,6 +1277,7 @@ function init(){
     renderer.setSize(innerWidth,innerHeight);
   });
   renderer.domElement.addEventListener("click",()=>{
+    if(TACTIL) return;
     if(activo && !document.querySelector(".ov.show")) renderer.domElement.requestPointerLock();
   });
   renderer.domElement.addEventListener("contextmenu",e=>{ e.preventDefault(); if(activo&&locked) lanzarDash(); });
@@ -1055,6 +1299,7 @@ function init(){
   addEventListener("keyup",e=>{ teclas[e.code]=false; });
   addEventListener("blur",()=>{ for(const k in teclas) teclas[k]=false; });
 
+  initTactil();
   bucle();
 }
 
@@ -1062,6 +1307,12 @@ let tHud=0, camCine=0;
 function bucle(){
   requestAnimationFrame(bucle);
   const dt=Math.min(clock.getDelta(),0.045);
+  if(puertaAbierta && puertaT<1){
+    puertaT=Math.min(1,puertaT+dt*0.75);
+    const e=1-Math.pow(1-puertaT,3);          // suavizado
+    if(puertaIzq) puertaIzq.rotation.y = -e*1.75;
+    if(puertaDer) puertaDer.rotation.y =  e*1.75;
+  }
   if(activo){
     fisica(dt);
     moverCamara();
@@ -1093,6 +1344,7 @@ function hud(){
 
   $("#habDash").className = "hab"+(P.dashCD>0?" off":" listo");
   $("#habSalto").className = "hab"+(enSuelo||coyote>0?" listo":" off");
+  if(TACTIL) return;
   $("#ayuda").innerHTML = locked
     ? '<b>W A S D</b> moverse · <b>mouse</b> cámara · <b>espacio</b> saltar · <b>shift</b> dash · <b>E</b> abrir · <b>ESC</b> soltar mouse'
     : '<b style="color:#F2C14E">HAZ CLIC EN LA PANTALLA PARA CONTROLAR A SEBASTIÁN</b>';
