@@ -5,3 +5,6 @@ desktop.ini
 .idea/
 .vercel/
 node_modules/
+
+# Los audios sueltos no van al repositorio: ya estan incrustados en narracion.js
+narracion/
